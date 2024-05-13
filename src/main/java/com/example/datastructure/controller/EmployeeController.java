@@ -6,7 +6,6 @@ import com.example.datastructure.model.Employee;
 import com.example.datastructure.model.Grade;
 import com.example.datastructure.service.CsvService;
 import com.example.datastructure.service.EmployeeService;
-import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -21,15 +20,16 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
+@RequestMapping("/api/employees")
 public class EmployeeController {
+
     @Autowired
     private EmployeeService employeeService;
 
     @Autowired
     private CsvService csvService;
 
-    @Transactional
-    @GetMapping("/employees")
+    @GetMapping
     public ResponseEntity<List<EmployeeDTO>> getAllEmployees() {
         List<Employee> employees = employeeService.getAllEmployees();
         List<EmployeeDTO> employeeDTOs = employees.stream()
@@ -39,7 +39,7 @@ public class EmployeeController {
         return ResponseEntity.ok(employeeDTOs);
     }
 
-    @PostMapping("/employees/import_csv")
+    @PostMapping("/import-csv")
     public ResponseEntity<String> importCsv(@RequestParam("file") MultipartFile file) {
         if (file.isEmpty()) {
             return ResponseEntity.badRequest().body("Please upload a CSV file");
@@ -54,25 +54,19 @@ public class EmployeeController {
         }
     }
 
-    @GetMapping("/employees/export_as_csv")
+    @GetMapping("/export-as-csv")
     public ResponseEntity<byte[]> exportToCsv() {
         try {
-            // Fetch employee data from service layer
             List<Employee> employees = employeeService.getAllEmployees();
-
-            // Create ByteArrayOutputStream to hold CSV data
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             PrintWriter writer = new PrintWriter(baos);
 
-            // Call exportToCsv method to write CSV data to PrintWriter
             csvService.exportToCsv(employees, writer);
             writer.flush();
             writer.close();
 
-            // Convert CSV data to byte array
             byte[] csvBytes = baos.toByteArray();
 
-            // Set response headers for CSV download
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
             headers.setContentDispositionFormData("filename", "employees.csv");
@@ -84,18 +78,16 @@ public class EmployeeController {
         }
     }
 
-    @PutMapping("/employee/{id}/{grade}")
+    @PutMapping("/{id}/grade/{grade}")
     public ResponseEntity<String> updateEmployeeGrade(
             @PathVariable("id") Long employeeId,
             @PathVariable("grade") Grade newGrade) {
         try {
-            // Check if employee exists
             Employee existingEmployee = employeeService.getEmployeeById(employeeId);
             if (existingEmployee == null) {
                 return ResponseEntity.notFound().build();
             }
 
-            // Update employee grade
             existingEmployee.setGrade(newGrade);
             employeeService.updateEmployee(existingEmployee);
 
