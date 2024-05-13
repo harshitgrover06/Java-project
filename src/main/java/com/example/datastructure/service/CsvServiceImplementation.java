@@ -20,9 +20,8 @@ public class CsvServiceImplementation implements CsvService {
 
     @Override
     public void processCsv(MultipartFile file) {
-        try {
-            InputStream inputStream = file.getInputStream();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+        try (InputStream inputStream = file.getInputStream();
+             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] data = line.split(",");
@@ -31,7 +30,7 @@ public class CsvServiceImplementation implements CsvService {
                 employee.setLastName(data[1]);
                 employee.setDateOfBirth(parseDate(data[2])); // Assuming date format is yyyy-MM-dd
                 employee.setDateOfJoining(parseDate(data[3])); // Assuming date format is yyyy-MM-dd
-                employee.setGrade(Grade.valueOf(data[4])); // Assuming Grade is an Enum
+                employee.setGrade(Grade.valueOf(data[4].trim())); // Assuming Grade is an Enum
                 employeeRepository.save(employee);
             }
         } catch (IOException e) {
@@ -41,8 +40,8 @@ public class CsvServiceImplementation implements CsvService {
     }
 
     private LocalDate parseDate(String dateStr) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
-        return LocalDate.parse(dateStr, formatter);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        return LocalDate.parse(dateStr.trim(), formatter);
     }
 
     public void exportToCsv(List<Employee> employees, PrintWriter writer) {
@@ -55,11 +54,4 @@ public class CsvServiceImplementation implements CsvService {
             sb.append(employee.getId()).append(",");
             sb.append(StringUtils.quote(employee.getFirstName())).append(",");
             sb.append(StringUtils.quote(employee.getLastName())).append(",");
-            sb.append(employee.getDateOfBirth()).append(",");
-            sb.append(employee.getDateOfJoining()).append(",");
-            sb.append(employee.getGrade());
-
-            writer.println(sb.toString());
-        }
-    }
-}
+   
